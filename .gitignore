@@ -1,0 +1,77 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build output
+dist/
+dist-ssr/
+.build/
+.cache/
+.next/
+out/
+coverage/
+public/build/
+
+# Environment variables
+.env
+.env.*.local
+*.local
+
+# Logs
+logs/
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+jest.config.js
+coverage/
+test-results/
+
+# PM2 logs and ecosystem
+pids/
+*.pid
+*.seed
+*.pid.lock
+ecosystem.config.js
+
+# Debug
+debug.log
+npm-debug.log*
+.vscode/launch.json
+
+# Optional - lock files (only if you use a single one)
+# If using npm:
+# yarn.lock
+# If using yarn:
+# package-lock.json
+# If using pnpm:
+# package-lock.json
+# yarn.lock
+
+# Optional - macOS/Linux/Linux backup files
+*.bak
+*.tmp
+*.orig
+*.swp
+*~
