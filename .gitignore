@@ -15,6 +15,8 @@ dist-ssr/
 out/
 coverage/
 public/build/
+Dockerfile
+.dockerignore
 
 # Environment variables
 .env

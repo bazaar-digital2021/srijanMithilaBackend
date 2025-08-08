@@ -26,7 +26,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `https://srijanmithilabackend.onrender.com`,
+        // url: `https://srijanmithilabackend.onrender.com`,
+        url: `https://localhost:${PORT}`,
       },
     ],
   },
@@ -54,7 +55,7 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parser
 app.use(cookieParser());
 
-// 🔐 Manual MongoDB sanitization (Safe for Express 4+)
+// Manual MongoDB sanitization (Safe for Express 4+)
 app.use((req, res, next) => {
   if (req.body) mongoSanitize.sanitize(req.body);
   if (req.query) mongoSanitize.sanitize(req.query);
@@ -116,10 +117,12 @@ const startServer = async () => {
     await connectionToMongoDB();
     app.listen(PORT, () => {
       console.log(
-        `Server running at https://srijanmithilabackend.onrender.com`
+        // `Server running at https://srijanmithilabackend.onrender.com`
+        `Server running at https://localhost:${PORT}`
       );
       console.log(
-        `Swagger docs at https://srijanmithilabackend.onrender.com/api-docs`
+        // `Swagger docs at https://srijanmithilabackend.onrender.com/api-docs`
+        `Swagger docs at https://localhost:${PORT}/api-docs`
       );
     });
   } catch (error) {

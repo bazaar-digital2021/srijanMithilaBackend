@@ -13,7 +13,7 @@ const connectionToMongoDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000,
-      autoIndex: process.env.NODE_ENV !== "production", // enable autoIndex only in dev
+      autoIndex: process.env.NODE_ENV !== "production",
     });
 
     console.log(`MongoDB connected: ${conn.connection.host}`);
