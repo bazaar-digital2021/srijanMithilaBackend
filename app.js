@@ -26,7 +26,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `https://srijanmithilabackend.onrender.com:${PORT}`,
+        url: `https://srijanmithilabackend.onrender.com`,
       },
     ],
   },
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests, please try again later.",
@@ -116,10 +116,10 @@ const startServer = async () => {
     await connectionToMongoDB();
     app.listen(PORT, () => {
       console.log(
-        `Server running at https://srijanmithilabackend.onrender.com:${PORT}`
+        `Server running at https://srijanmithilabackend.onrender.com`
       );
       console.log(
-        `Swagger docs at https://srijanmithilabackend.onrender.com:${PORT}/api-docs`
+        `Swagger docs at https://srijanmithilabackend.onrender.com/api-docs`
       );
     });
   } catch (error) {
