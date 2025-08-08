@@ -20,23 +20,23 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "My API Documentation",
+      title: "SrijanMithila API",
       version: "1.0.0",
-      description: "Auto-generated Swagger docs for all APIs",
+      description: "Auto-generated Swagger docs",
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
+        url: `https://srijanmithilabackend.onrender.com:${PORT}`,
       },
     ],
   },
-  apis: ["./routes/*.js", "./app.js"], // update if routes are in another folder
+  apis: ["./routes/*.js", "./app.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Security HTTP headers
+// Security middleware
 app.use(helmet());
 
 // CORS configuration
@@ -47,34 +47,32 @@ app.use(
   })
 );
 
-// Parse request body
+// Parse JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Parse cookies
+// Cookie parser
 app.use(cookieParser());
 
-// MongoDB Injection Protection
-app.use(
-  mongoSanitize({
-    onSanitize: ({ req, key }) => {
-      console.warn(`Sanitized ${key}:`, req[key]);
-    },
-    replaceWith: "_",
-  })
-);
+// 🔐 Manual MongoDB sanitization (Safe for Express 4+)
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  next();
+});
 
-// Rate Limiting
+// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests, please try again later.",
 });
 app.use(limiter);
 
-// Root Route with welcome message
+// Root Route
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Welcome to the SrijanMithila API Server!",
@@ -100,9 +98,9 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-// Error Handler
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error("Unhandled Error:", err);
+  console.error("Unhandled Error:", err.stack);
   res.status(500).json({
     message: "Server Error",
     error:
@@ -112,13 +110,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-// DB + Server Boot
+// Start server and connect DB
 const startServer = async () => {
   try {
     await connectionToMongoDB();
     app.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
-      console.log(`Swagger docs at http://localhost:${PORT}/api-docs`);
+      console.log(
+        `Server running at https://srijanmithilabackend.onrender.com:${PORT}`
+      );
+      console.log(
+        `Swagger docs at https://srijanmithilabackend.onrender.com:${PORT}/api-docs`
+      );
     });
   } catch (error) {
     console.error("Server failed to start:", error.message);
