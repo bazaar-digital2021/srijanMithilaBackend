@@ -10,8 +10,8 @@ const connectionToMongoDB = async () => {
 
   try {
     const conn = await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000,
       autoIndex: process.env.NODE_ENV !== "production",
     });

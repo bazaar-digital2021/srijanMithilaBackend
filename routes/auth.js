@@ -7,11 +7,24 @@ import fetchData from "../middleware/fetchData.js";
 
 const router = Router();
 
-// Load secrets from .env
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-const ACCESS_TOKEN_EXPIRES = "15m";
-const REFRESH_TOKEN_EXPIRES = "7d";
+// Read env values directly (ensures latest values from process.env)
+const ACCESS_TOKEN_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES || "15m";
+const REFRESH_TOKEN_EXPIRES = process.env.REFRESH_TOKEN_EXPIRES || "7d";
+
+// helper to sign a token and handle missing secret clearly
+function signToken(payload, secretEnvName, expiresIn) {
+  const secret = process.env[secretEnvName];
+  if (!secret) {
+    const err = new Error(
+      `Missing env var ${secretEnvName}. Set it in your .env (no quotes)`
+    );
+    err.statusCode = 500;
+    throw err;
+  }
+
+  // jwt.sign can throw if secret is invalid — let caller handle it
+  return jwt.sign(payload, secret, { expiresIn });
+}
 
 // ========================== SIGNUP ===============================
 router.post(
@@ -67,13 +80,27 @@ router.post(
         password: hashedPassword,
       });
 
-      const accessToken = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET, {
-        expiresIn: ACCESS_TOKEN_EXPIRES,
-      });
-
-      const refreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
-        expiresIn: REFRESH_TOKEN_EXPIRES,
-      });
+      // Sign tokens using process.env with guard
+      let accessToken, refreshToken;
+      try {
+        accessToken = signToken(
+          { userId: user._id },
+          "JWT_ACCESS_SECRET",
+          ACCESS_TOKEN_EXPIRES
+        );
+        refreshToken = signToken(
+          { userId: user._id },
+          "JWT_REFRESH_SECRET",
+          REFRESH_TOKEN_EXPIRES
+        );
+      } catch (err) {
+        console.error("JWT sign error:", err.message);
+        // If token signing fails, remove the newly created user to avoid partial state (optional)
+        // await User.findByIdAndDelete(user._id).catch(() => {});
+        return res
+          .status(err.statusCode || 500)
+          .json({ message: err.message || "Token creation failed" });
+      }
 
       user.refreshToken = refreshToken;
       await user.save();
@@ -89,7 +116,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error(error);
+      console.error("Signup error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
@@ -123,13 +150,25 @@ router.post(
       if (!isMatch)
         return res.status(401).json({ message: "Invalid credentials" });
 
-      const accessToken = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET, {
-        expiresIn: ACCESS_TOKEN_EXPIRES,
-      });
-
-      const refreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
-        expiresIn: REFRESH_TOKEN_EXPIRES,
-      });
+      // Sign tokens with guard
+      let accessToken, refreshToken;
+      try {
+        accessToken = signToken(
+          { userId: user._id },
+          "JWT_ACCESS_SECRET",
+          ACCESS_TOKEN_EXPIRES
+        );
+        refreshToken = signToken(
+          { userId: user._id },
+          "JWT_REFRESH_SECRET",
+          REFRESH_TOKEN_EXPIRES
+        );
+      } catch (err) {
+        console.error("JWT sign error:", err.message);
+        return res
+          .status(err.statusCode || 500)
+          .json({ message: err.message || "Token creation failed" });
+      }
 
       user.refreshToken = refreshToken;
       await user.save();
@@ -145,7 +184,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error(error);
+      console.error("Login error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
@@ -154,47 +193,86 @@ router.post(
 // ========================== REFRESH TOKEN ===============================
 router.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.body;
+  console.log("RefreshToken: ", refreshToken);
 
-  if (!refreshToken)
+  if (!refreshToken) {
     return res.status(401).json({ message: "No refresh token provided" });
+  }
 
   try {
-    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.userId);
-
-    if (!user || user.refreshToken !== refreshToken) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) {
+      return res
+        .status(500)
+        .json({ message: "Missing JWT_REFRESH_SECRET in server config" });
     }
 
-    const newAccessToken = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET, {
-      expiresIn: ACCESS_TOKEN_EXPIRES,
-    });
+    // Verify the token signature and expiration
+    const decoded = jwt.verify(refreshToken, secret);
 
-    const newRefreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
-      expiresIn: REFRESH_TOKEN_EXPIRES,
-    });
+    // Find the user by userId in token payload
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
+    }
 
-    user.refreshToken = newRefreshToken;
-    await user.save();
+    // Since you are NOT storing refresh tokens in DB, skip token matching
+
+    // Generate a new access token
+    const newAccessToken = signToken(
+      { userId: user._id },
+      "JWT_ACCESS_SECRET",
+      ACCESS_TOKEN_EXPIRES
+    );
+
+    // Generate a new refresh token (optional, or just reuse old one)
+    const newRefreshToken = signToken(
+      { userId: user._id },
+      "JWT_REFRESH_SECRET",
+      REFRESH_TOKEN_EXPIRES
+    );
+
+    // No need to save refreshToken to DB since you don't store it
 
     res.status(200).json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     });
   } catch (error) {
-    console.error(error);
-    res.status(403).json({ message: "Invalid or expired refresh token" });
+    console.error("Refresh token error:", error);
+    return res
+      .status(403)
+      .json({ message: "Invalid or expired refresh token" });
   }
 });
 
 // ========================== GET LOGGED-IN USER ===============================
 router.get("/me", fetchData, async (req, res) => {
   try {
-    const user = await User.findById(req.user).select("fullName email");
+    const user = await User.findById(req.user).select(
+      "fullName email refreshToken"
+    );
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // create a fresh access token (guarded)
+    let accessToken;
+    try {
+      accessToken = signToken(
+        { userId: user._id },
+        "JWT_ACCESS_SECRET",
+        ACCESS_TOKEN_EXPIRES
+      );
+    } catch (err) {
+      console.error("JWT sign error (me):", err.message);
+      return res
+        .status(err.statusCode || 500)
+        .json({ message: err.message || "Token creation failed" });
+    }
 
     res.status(200).json({
       message: "User data fetched successfully",
+      accessToken,
+      refreshToken: user.refreshToken,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -202,6 +280,7 @@ router.get("/me", fetchData, async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Get /me error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
