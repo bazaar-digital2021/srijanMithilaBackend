@@ -1,4 +1,3 @@
-// swagger.js
 import express from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
@@ -7,14 +6,6 @@ const router = express.Router();
 
 const PORT = process.env.PORT || 5000;
 
-/**
- * Swagger / OpenAPI configuration
- *
- * - components.schemas contains request/response models so the UI shows all properties.
- * - securitySchemes defines Bearer auth so you can authorize in Swagger UI.
- * - apis points to route files; JSDoc comments inside those files will be picked up automatically.
- */
-
 const swaggerOptions = {
   definition: {
     openapi: "3.0.3",
@@ -22,7 +13,7 @@ const swaggerOptions = {
       title: "SrijanMithila API",
       version: "1.0.0",
       description:
-        "SrijanMithila backend API docs — signup, login, refresh token, get current user, Google login, etc.",
+        "SrijanMithila backend API docs — signup, login, refresh token, get current user, Google login, product CRUD, etc.",
       contact: {
         name: "SrijanMithila",
       },
@@ -150,6 +141,111 @@ const swaggerOptions = {
             errors: { type: "array", items: { type: "object" } },
           },
         },
+
+        // Product Schemas
+        Product: {
+          type: "object",
+          properties: {
+            _id: { type: "string", example: "64d9a9c9e1f1a2b3c4d5e6f8" },
+            name: { type: "string", example: "Example Product" },
+            description: {
+              type: "string",
+              example: "This is a sample product description.",
+            },
+            price: { type: "number", example: 199.99 },
+            category: { type: "string", example: "Electronics" },
+            brand: { type: "string", example: "Acme" },
+            stock: { type: "integer", example: 50 },
+            images: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  public_id: { type: "string", example: "image123" },
+                  url: {
+                    type: "string",
+                    example: "https://example.com/image.jpg",
+                  },
+                },
+              },
+            },
+            rating: { type: "number", example: 4.5 },
+            numReviews: { type: "integer", example: 10 },
+            isFeatured: { type: "boolean", example: true },
+            createdBy: {
+              type: "object",
+              properties: {
+                _id: { type: "string", example: "64d8a9c8e1f1a2b3c4d5e6f7" },
+                fullName: { type: "string", example: "Admin User" },
+                email: { type: "string", example: "admin@example.com" },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2024-08-12T10:00:00Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2024-08-12T12:00:00Z",
+            },
+          },
+        },
+        ProductCreateRequest: {
+          type: "object",
+          required: ["name", "description", "price", "category", "stock"],
+          properties: {
+            name: { type: "string", example: "Example Product" },
+            description: {
+              type: "string",
+              example: "This is a sample product description.",
+            },
+            price: { type: "number", example: 199.99 },
+            category: { type: "string", example: "Electronics" },
+            brand: { type: "string", example: "Acme" },
+            stock: { type: "integer", example: 50 },
+            images: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  public_id: { type: "string", example: "image123" },
+                  url: {
+                    type: "string",
+                    example: "https://example.com/image.jpg",
+                  },
+                },
+              },
+            },
+            isFeatured: { type: "boolean", example: true },
+          },
+        },
+        ProductUpdateRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Updated Product Name" },
+            description: { type: "string", example: "Updated description" },
+            price: { type: "number", example: 150.0 },
+            category: { type: "string", example: "Updated Category" },
+            brand: { type: "string", example: "Updated Brand" },
+            stock: { type: "integer", example: 20 },
+            images: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  public_id: { type: "string", example: "image456" },
+                  url: {
+                    type: "string",
+                    example: "https://example.com/updatedimage.jpg",
+                  },
+                },
+              },
+            },
+            isFeatured: { type: "boolean", example: false },
+          },
+        },
       },
     },
     tags: [
@@ -158,8 +254,14 @@ const swaggerOptions = {
         description:
           "Authentication endpoints (signup, login, refresh token, me, Google login)",
       },
+      {
+        name: "Product",
+        description:
+          "Product management endpoints (create, read, update, delete)",
+      },
     ],
     paths: {
+      // Auth routes (preserved your existing ones)
       "/auth/signup": {
         post: {
           tags: ["Auth"],
@@ -299,8 +401,6 @@ const swaggerOptions = {
           },
         },
       },
-
-      // Added Google login route
       "/auth/google": {
         post: {
           tags: ["Auth"],
@@ -341,10 +441,279 @@ const swaggerOptions = {
           },
         },
       },
+
+      // Product routes
+      "/product": {
+        get: {
+          tags: ["Product"],
+          summary: "Get all products",
+          responses: {
+            200: {
+              description: "List of products",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      products: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/Product" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/product/{id}": {
+        get: {
+          tags: ["Product"],
+          summary: "Get product by ID",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              description: "Product ID",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Product details",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Product" },
+                },
+              },
+            },
+            400: {
+              description: "Invalid product ID",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Product not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        put: {
+          tags: ["Product"],
+          summary: "Update product by ID (admin only)",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              description: "Product ID",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ProductUpdateRequest" },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Updated product details",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Product" },
+                },
+              },
+            },
+            400: {
+              description: "Invalid product ID or validation errors",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            403: {
+              description: "Access denied. Admins only.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Product not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        delete: {
+          tags: ["Product"],
+          summary: "Delete product by ID (admin only)",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              description: "Product ID",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Product deleted successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Product deleted successfully",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Invalid product ID",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            403: {
+              description: "Access denied. Admins only.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Product not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/product/create": {
+        post: {
+          tags: ["Product"],
+          summary: "Create a new product (admin only)",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ProductCreateRequest" },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Product created successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Product" },
+                },
+              },
+            },
+            400: {
+              description: "Validation errors",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            403: {
+              description: "Access denied. Admins only.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Duplicate product name",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
-  apis: ["./routes/*.js"], // keep if you have JSDoc in route files
+  apis: ["./routes/*.js"], // your JSDoc route files if any
 };
+
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 router.use("/", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

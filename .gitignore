@@ -15,6 +15,8 @@ dist-ssr/
 out/
 coverage/
 public/build/
+
+# Docker files
 Dockerfile
 .dockerignore
 
@@ -26,6 +28,8 @@ Dockerfile
 # Logs
 logs/
 *.log
+debug.log
+npm-debug.log*
 
 # OS-generated files
 .DS_Store
@@ -34,6 +38,7 @@ Thumbs.db
 # IDEs and editors
 .vscode/
 !.vscode/extensions.json
+.vscode/launch.json
 .idea/
 *.suo
 *.ntvs*
@@ -57,21 +62,15 @@ pids/
 *.pid.lock
 ecosystem.config.js
 
-# Debug
-debug.log
-npm-debug.log*
-.vscode/launch.json
-
-# Optional - lock files (only if you use a single one)
+# Optional lock files - comment out the ones you want to keep
 # If using npm:
-# yarn.lock
+# package-lock.json
 # If using yarn:
-# package-lock.json
-# If using pnpm:
-# package-lock.json
 # yarn.lock
+# If using pnpm:
+# pnpm-lock.yaml
 
-# Optional - macOS/Linux/Linux backup files
+# Backup / temp files
 *.bak
 *.tmp
 *.orig
