@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 // Helper to convert UTC timestamps to IST
 function toIST(date) {
-  const offset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
+  if (!date) return date; // avoid error if date is undefined/null
+  const offset = 5.5 * 60 * 60 * 1000;
   return new Date(date.getTime() + offset);
 }
 
@@ -14,6 +15,8 @@ const productSchema = new mongoose.Schema(
       trim: true,
       minlength: [3, "Product name must be at least 3 characters long"],
       maxlength: [100, "Product name must be under 100 characters"],
+      unique: true,
+      index: true,
     },
     description: {
       type: String,
@@ -62,7 +65,7 @@ const productSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: true,
     },
   },

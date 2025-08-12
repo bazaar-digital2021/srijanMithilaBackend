@@ -1,5 +1,8 @@
+// routes/authGoogle.js
 import express from "express";
+import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
+import bcrypt from "bcryptjs";
 
 import User from "../models/User.js";
 import {
@@ -7,13 +10,23 @@ import {
   signRefreshToken,
 } from "../utils/googleLoginMiddleware.js";
 
+// Load environment variables
+dotenv.config();
+
+// Validate environment variables early
+if (!process.env.GOOGLE_CLIENT_ID) {
+  throw new Error("GOOGLE_CLIENT_ID is not set in environment variables");
+}
+if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET or JWT_REFRESH_SECRET is not set");
+}
+
 const router = express.Router();
 console.log("Google Auth Router initialized");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-console.log("OAuth2Client instance created:", client);
 
-router.post("/google", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { idToken } = req.body;
     console.log("Received idToken:", idToken);
@@ -40,24 +53,30 @@ router.post("/google", async (req, res) => {
         .json({ message: "Invalid Google ID token payload" });
     }
 
-    const { email, name, email_verified } = payload;
+    const { email, email_verified } = payload;
 
     if (!email_verified) {
       console.warn(`Email not verified: ${email}`);
       return res.status(401).json({ message: "Email not verified by Google" });
     }
 
-    // Find user by email
+    // Find or create user
     console.log(`Looking up user with email: ${email}`);
     let user = await User.findOne({ email });
 
     if (!user) {
       console.log("User not found, creating a new user");
-      // Create new user with dummy password (not used for Google login)
+
+      // Generate a salted & hashed dummy password
+      const dummyPassword = Math.random().toString(36).slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(dummyPassword, salt);
+
       user = new User({
-        fullName: name,
+        fullName: payload.name || email.split("@")[0],
         email,
-        password: Math.random().toString(36).slice(-8),
+        password: hashedPassword, // stored hashed password
+        googleId: payload.sub,
       });
 
       try {
@@ -65,9 +84,7 @@ router.post("/google", async (req, res) => {
         console.log("New user saved:", user._id);
       } catch (saveError) {
         console.error("Error saving new user:", saveError);
-        return res
-          .status(500)
-          .json({ message: "Internal server error while saving user" });
+        return res.status(500).json({ message: "Error saving user" });
       }
     } else {
       console.log("User found:", user._id);
@@ -75,13 +92,9 @@ router.post("/google", async (req, res) => {
 
     // Generate JWT tokens
     console.log("Generating access and refresh tokens");
-    const accessToken = await signAccessToken(user._id);
-    const refreshToken = await signRefreshToken(user._id);
-
+    const accessToken = await signAccessToken(user._id.toString());
+    const refreshToken = await signRefreshToken(user._id.toString());
     console.log("Tokens generated successfully");
-
-    // Optionally save refreshToken in DB or send to client only
-    // ...
 
     return res.status(200).json({
       message: "Google login successful",
@@ -101,8 +114,6 @@ router.post("/google", async (req, res) => {
         .status(401)
         .json({ message: "Unauthorized: Invalid Google ID token" });
     }
-
-    // Handle other specific GoogleAuth errors if needed here
 
     return res.status(500).json({
       message: "Internal server error during Google login",

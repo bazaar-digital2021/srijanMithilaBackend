@@ -245,12 +245,12 @@ router.post("/refresh-token", async (req, res) => {
       .json({ message: "Invalid or expired refresh token" });
   }
 });
-
 // ========================== GET LOGGED-IN USER ===============================
 router.get("/me", fetchData, async (req, res) => {
   try {
+    // Include "role" in the fields selected
     const user = await User.findById(req.user).select(
-      "fullName email refreshToken"
+      "fullName email refreshToken role"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -277,6 +277,7 @@ router.get("/me", fetchData, async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        role: user.role, // <-- Added role here
       },
     });
   } catch (error) {
