@@ -19,10 +19,11 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: "Local development server",
+        url: "https://srijanmithilabackend.onrender.com",
+        description: "Production server hosted on Render",
       },
     ],
+
     components: {
       securitySchemes: {
         bearerAuth: {

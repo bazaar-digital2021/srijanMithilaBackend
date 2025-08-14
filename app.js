@@ -139,8 +139,12 @@ const startServer = async () => {
   try {
     await connectionToMongoDB();
     app.listen(PORT, () => {
-      logger.info(`Server running at http://localhost:${PORT}`);
-      logger.info(`Swagger docs at http://localhost:${PORT}/api-docs`);
+      logger.info(
+        `Server running at https://srijanmithilabackend.onrender.com`
+      );
+      logger.info(
+        `Swagger docs at https://srijanmithilabackend.onrender.com/api-docs`
+      );
     });
   } catch (error) {
     logger.error("Server failed to start:", error.message);
