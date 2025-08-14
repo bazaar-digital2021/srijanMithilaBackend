@@ -5,7 +5,6 @@ import swaggerUi from "swagger-ui-express";
 const router = express.Router();
 
 const PORT = process.env.PORT || 5000;
-
 const swaggerOptions = {
   definition: {
     openapi: "3.0.3",
@@ -13,7 +12,7 @@ const swaggerOptions = {
       title: "SrijanMithila API",
       version: "1.0.0",
       description:
-        "SrijanMithila backend API docs — signup, login, refresh token, get current user, Google login, product CRUD, etc.",
+        "SrijanMithila backend API docs — signup, login, refresh token, get current user, Google login, product CRUD, payment operations, etc.",
       contact: {
         name: "SrijanMithila",
       },
@@ -33,6 +32,7 @@ const swaggerOptions = {
         },
       },
       schemas: {
+        // Auth Schemas
         SignupRequest: {
           type: "object",
           required: ["fullName", "email", "password"],
@@ -47,7 +47,7 @@ const swaggerOptions = {
               type: "string",
               example: "Test@1234",
               description:
-                "Password (min 8 chars, at least 1 uppercase, lowercase, number and special char)",
+                "Password (min 8 chars, uppercase, lowercase, number, special char)",
             },
           },
         },
@@ -67,10 +67,7 @@ const swaggerOptions = {
           type: "object",
           required: ["refreshToken"],
           properties: {
-            refreshToken: {
-              type: "string",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-            },
+            refreshToken: { type: "string", example: "eyJhbGciOi..." },
           },
         },
         GoogleLoginRequest: {
@@ -79,8 +76,8 @@ const swaggerOptions = {
           properties: {
             idToken: {
               type: "string",
-              example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MD...",
-              description: "Google ID token from client",
+              example: "eyJhbGciOi...",
+              description: "Google ID token",
             },
           },
         },
@@ -91,14 +88,8 @@ const swaggerOptions = {
               type: "string",
               example: "User registered successfully",
             },
-            accessToken: {
-              type: "string",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-            },
-            refreshToken: {
-              type: "string",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-            },
+            accessToken: { type: "string", example: "eyJhbGciOi..." },
+            refreshToken: { type: "string", example: "eyJhbGciOi..." },
             user: {
               type: "object",
               properties: {
@@ -109,31 +100,7 @@ const swaggerOptions = {
             },
           },
         },
-        MeResponse: {
-          type: "object",
-          properties: {
-            message: {
-              type: "string",
-              example: "User data fetched successfully",
-            },
-            accessToken: {
-              type: "string",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-            },
-            refreshToken: {
-              type: "string",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-            },
-            user: {
-              type: "object",
-              properties: {
-                id: { type: "string", example: "64d8a9c8e1f1a2b3c4d5e6f7" },
-                fullName: { type: "string", example: "John Doe" },
-                email: { type: "string", example: "john@example.com" },
-              },
-            },
-          },
-        },
+        MeResponse: { $ref: "#/components/schemas/AuthResponse" },
         ErrorResponse: {
           type: "object",
           properties: {
@@ -175,9 +142,9 @@ const swaggerOptions = {
             createdBy: {
               type: "object",
               properties: {
-                _id: { type: "string", example: "64d8a9c8e1f1a2b3c4d5e6f7" },
-                fullName: { type: "string", example: "Admin User" },
-                email: { type: "string", example: "admin@example.com" },
+                _id: { type: "string" },
+                fullName: { type: "string" },
+                email: { type: "string" },
               },
             },
             createdAt: {
@@ -196,69 +163,89 @@ const swaggerOptions = {
           type: "object",
           required: ["name", "description", "price", "category", "stock"],
           properties: {
-            name: { type: "string", example: "Example Product" },
-            description: {
-              type: "string",
-              example: "This is a sample product description.",
-            },
-            price: { type: "number", example: 199.99 },
-            category: { type: "string", example: "Electronics" },
-            brand: { type: "string", example: "Acme" },
-            stock: { type: "integer", example: 50 },
+            name: { type: "string" },
+            description: { type: "string" },
+            price: { type: "number" },
+            category: { type: "string" },
+            brand: { type: "string" },
+            stock: { type: "integer" },
             images: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  public_id: { type: "string", example: "image123" },
-                  url: {
-                    type: "string",
-                    example: "https://example.com/image.jpg",
-                  },
+                  public_id: { type: "string" },
+                  url: { type: "string" },
                 },
               },
             },
-            isFeatured: { type: "boolean", example: true },
+            isFeatured: { type: "boolean" },
           },
         },
         ProductUpdateRequest: {
           type: "object",
           properties: {
-            name: { type: "string", example: "Updated Product Name" },
-            description: { type: "string", example: "Updated description" },
-            price: { type: "number", example: 150.0 },
-            category: { type: "string", example: "Updated Category" },
-            brand: { type: "string", example: "Updated Brand" },
-            stock: { type: "integer", example: 20 },
+            name: { type: "string" },
+            description: { type: "string" },
+            price: { type: "number" },
+            category: { type: "string" },
+            brand: { type: "string" },
+            stock: { type: "integer" },
             images: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  public_id: { type: "string", example: "image456" },
-                  url: {
-                    type: "string",
-                    example: "https://example.com/updatedimage.jpg",
-                  },
+                  public_id: { type: "string" },
+                  url: { type: "string" },
                 },
               },
             },
-            isFeatured: { type: "boolean", example: false },
+            isFeatured: { type: "boolean" },
+          },
+        },
+
+        // Payment Schemas
+        PaymentOrderRequest: {
+          type: "object",
+          required: ["amount", "currency"],
+          properties: {
+            amount: { type: "number", example: 499 },
+            currency: { type: "string", example: "INR" },
+          },
+        },
+        PaymentOrderResponse: {
+          type: "object",
+          properties: {
+            id: { type: "string", example: "order_123456789" },
+            amount: { type: "number", example: 499 },
+            currency: { type: "string", example: "INR" },
+            status: { type: "string", example: "created" },
+          },
+        },
+        PaymentVerifyRequest: {
+          type: "object",
+          required: ["orderId", "paymentId", "signature"],
+          properties: {
+            orderId: { type: "string", example: "order_123456789" },
+            paymentId: { type: "string", example: "pay_123456789" },
+            signature: { type: "string", example: "signature_hash" },
+          },
+        },
+        PaymentVerifyResponse: {
+          type: "object",
+          properties: {
+            status: { type: "string", example: "success" },
+            orderId: { type: "string", example: "order_123456789" },
+            paymentId: { type: "string", example: "pay_123456789" },
           },
         },
       },
     },
     tags: [
-      {
-        name: "Auth",
-        description:
-          "Authentication endpoints (signup, login, refresh token, me, Google login)",
-      },
-      {
-        name: "Product",
-        description:
-          "Product management endpoints (create, read, update, delete)",
-      },
+      { name: "Auth", description: "Authentication endpoints" },
+      { name: "Product", description: "Product management endpoints" },
+      { name: "Payment", description: "Payment gateway endpoints" },
     ],
     paths: {
       // Auth routes (preserved your existing ones)
@@ -652,6 +639,7 @@ const swaggerOptions = {
           },
         },
       },
+      //Payment Routes
       "/product/create": {
         post: {
           tags: ["Product"],
@@ -700,6 +688,337 @@ const swaggerOptions = {
             },
             500: {
               description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payment/order": {
+        post: {
+          tags: ["Payment"],
+          summary: "Create a payment order",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PaymentOrderRequest" },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Order created",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/PaymentOrderResponse" },
+                },
+              },
+            },
+            400: {
+              description: "Invalid request",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payment/verify": {
+        post: {
+          tags: ["Payment"],
+          summary: "Verify payment after completion",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PaymentVerifyRequest" },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Payment verified",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/PaymentVerifyResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Invalid payment data",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payment/{id}": {
+        get: {
+          tags: ["Payment"],
+          summary: "Get payment/order details by ID",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+              description: "Payment/Order ID",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Payment details",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/PaymentOrderResponse" },
+                },
+              },
+            },
+            404: {
+              description: "Payment not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payments/health": {
+        get: {
+          tags: ["Payment"],
+          summary: "Payment service health check",
+          responses: {
+            200: {
+              description: "Service is healthy",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      ok: { type: "boolean", example: true },
+                      routes: {
+                        type: "object",
+                        example: {
+                          createOrder: "POST /payments/order",
+                          verify: "POST /payments/verify",
+                          capture: "POST /payments/capture",
+                          refund: "POST /payments/refund",
+                          detail: "GET /payments/:rpOrderId",
+                          webhook: "POST /payments/webhook",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payments/capture": {
+        post: {
+          tags: ["Payment"],
+          summary: "Manually capture a payment",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    rpPaymentId: { type: "string", example: "pay_123456789" },
+                    amountInPaise: { type: "integer", example: 50000 },
+                  },
+                  required: ["rpPaymentId"],
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Payment captured successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      ok: { type: "boolean", example: true },
+                      captured: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          amount: { type: "number" },
+                          currency: { type: "string" },
+                          status: { type: "string" },
+                          method: { type: "string" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payments/refund": {
+        post: {
+          tags: ["Payment"],
+          summary: "Refund a payment",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    rpPaymentId: { type: "string", example: "pay_123456789" },
+                    amountInPaise: { type: "integer", example: 50000 },
+                  },
+                  required: ["rpPaymentId"],
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Refund processed successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      ok: { type: "boolean", example: true },
+                      refund: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          payment_id: { type: "string" },
+                          amount: { type: "number" },
+                          currency: { type: "string" },
+                          status: { type: "string" },
+                          created_at: { type: "integer" },
+                          notes: { type: "object" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/payments/webhook": {
+        post: {
+          tags: ["Payment"],
+          summary: "Receive Razorpay webhook events",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  example: {
+                    event: "payment.captured",
+                    payload: {
+                      payment: {
+                        entity: {
+                          id: "pay_123",
+                          order_id: "order_123",
+                          method: "card",
+                          status: "captured",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Webhook received successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      received: { type: "boolean", example: true },
+                      event: { type: "object" },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Invalid payload",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            500: {
+              description: "Webhook handler failure",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
