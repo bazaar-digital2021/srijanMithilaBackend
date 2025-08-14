@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 function toIST(date) {
-  if (!date) return date; // avoid error if date is undefined/null
+  if (!date) return date;
   const offset = 5.5 * 60 * 60 * 1000;
   return new Date(date.getTime() + offset);
 }
@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [
         function () {
-          return !this.googleId; // required only if NOT Google login
+          return !this.googleId;
         },
         "Full name is required",
       ],
@@ -28,13 +28,20 @@ const userSchema = new mongoose.Schema(
       unique: true,
       match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
     },
+    mobile: {
+      type: String,
+      required: [true, "Mobile number is required"],
+      match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"],
+      unique: true,
+      trim: true,
+    },
     password: {
       type: String,
       minlength: 6,
       select: false,
       required: [
         function () {
-          return !this.googleId; // password required only if NOT Google login
+          return !this.googleId;
         },
         "Password is required",
       ],
@@ -53,6 +60,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    refreshToken: {
+      type: String,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -63,6 +74,7 @@ const userSchema = new mongoose.Schema(
         ret.updatedAt = toIST(ret.updatedAt);
         delete ret.__v;
         delete ret.password;
+        delete ret.refreshToken;
         return ret;
       },
     },
@@ -73,13 +85,16 @@ const userSchema = new mongoose.Schema(
         ret.updatedAt = toIST(ret.updatedAt);
         delete ret.__v;
         delete ret.password;
+        delete ret.refreshToken;
         return ret;
       },
     },
   }
 );
 
-userSchema.index({ email: 1 });
+// Ensure unique email & mobile
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ mobile: 1 }, { unique: true });
 
 const User = mongoose.model("User", userSchema);
 export default User;

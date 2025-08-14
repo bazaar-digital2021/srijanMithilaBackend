@@ -35,7 +35,7 @@ const swaggerOptions = {
         // Auth Schemas
         SignupRequest: {
           type: "object",
-          required: ["fullName", "email", "password"],
+          required: ["fullName", "email", "password", "mobile"],
           properties: {
             fullName: { type: "string", example: "John Doe" },
             email: {
@@ -48,6 +48,11 @@ const swaggerOptions = {
               example: "Test@1234",
               description:
                 "Password (min 8 chars, uppercase, lowercase, number, special char)",
+            },
+            mobile: {
+              type: "string",
+              example: "8828382326",
+              description: "10-digit mobile number, without +91 prefix",
             },
           },
         },
@@ -79,6 +84,12 @@ const swaggerOptions = {
               example: "eyJhbGciOi...",
               description: "Google ID token",
             },
+            mobile: {
+              type: "string",
+              example: "8828382326",
+              description:
+                "Required only for new users to register mobile for OTP login",
+            },
           },
         },
         AuthResponse: {
@@ -96,6 +107,7 @@ const swaggerOptions = {
                 id: { type: "string", example: "64d8a9c8e1f1a2b3c4d5e6f7" },
                 fullName: { type: "string", example: "John Doe" },
                 email: { type: "string", example: "john@example.com" },
+                mobile: { type: "string", example: "8828382326" }, // added mobile
               },
             },
           },
@@ -106,102 +118,6 @@ const swaggerOptions = {
           properties: {
             message: { type: "string", example: "Invalid credentials" },
             errors: { type: "array", items: { type: "object" } },
-          },
-        },
-
-        // Product Schemas
-        Product: {
-          type: "object",
-          properties: {
-            _id: { type: "string", example: "64d9a9c9e1f1a2b3c4d5e6f8" },
-            name: { type: "string", example: "Example Product" },
-            description: {
-              type: "string",
-              example: "This is a sample product description.",
-            },
-            price: { type: "number", example: 199.99 },
-            category: { type: "string", example: "Electronics" },
-            brand: { type: "string", example: "Acme" },
-            stock: { type: "integer", example: 50 },
-            images: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  public_id: { type: "string", example: "image123" },
-                  url: {
-                    type: "string",
-                    example: "https://example.com/image.jpg",
-                  },
-                },
-              },
-            },
-            rating: { type: "number", example: 4.5 },
-            numReviews: { type: "integer", example: 10 },
-            isFeatured: { type: "boolean", example: true },
-            createdBy: {
-              type: "object",
-              properties: {
-                _id: { type: "string" },
-                fullName: { type: "string" },
-                email: { type: "string" },
-              },
-            },
-            createdAt: {
-              type: "string",
-              format: "date-time",
-              example: "2024-08-12T10:00:00Z",
-            },
-            updatedAt: {
-              type: "string",
-              format: "date-time",
-              example: "2024-08-12T12:00:00Z",
-            },
-          },
-        },
-        ProductCreateRequest: {
-          type: "object",
-          required: ["name", "description", "price", "category", "stock"],
-          properties: {
-            name: { type: "string" },
-            description: { type: "string" },
-            price: { type: "number" },
-            category: { type: "string" },
-            brand: { type: "string" },
-            stock: { type: "integer" },
-            images: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  public_id: { type: "string" },
-                  url: { type: "string" },
-                },
-              },
-            },
-            isFeatured: { type: "boolean" },
-          },
-        },
-        ProductUpdateRequest: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            description: { type: "string" },
-            price: { type: "number" },
-            category: { type: "string" },
-            brand: { type: "string" },
-            stock: { type: "integer" },
-            images: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  public_id: { type: "string" },
-                  url: { type: "string" },
-                },
-              },
-            },
-            isFeatured: { type: "boolean" },
           },
         },
 
@@ -249,29 +165,56 @@ const swaggerOptions = {
     ],
     paths: {
       // Auth routes (preserved your existing ones)
-      "/auth/signup": {
+      // ===================== SIGNUP: SEND OTP =====================
+      "/auth/signup/send-otp": {
         post: {
           tags: ["Auth"],
-          summary: "Register a new user",
+          summary: "Send OTP to mobile for signup",
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/SignupRequest" },
+                schema: {
+                  type: "object",
+                  required: ["fullName", "email", "password", "mobile"],
+                  properties: {
+                    fullName: { type: "string", example: "John Doe" },
+                    email: {
+                      type: "string",
+                      format: "email",
+                      example: "john@example.com",
+                    },
+                    password: { type: "string", example: "Test@1234" },
+                    mobile: {
+                      type: "string",
+                      example: "8828382326",
+                      description: "10-digit mobile number (no +91 needed)",
+                    },
+                  },
+                },
               },
             },
           },
           responses: {
-            201: {
-              description: "Created",
+            200: {
+              description: "OTP sent successfully",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/AuthResponse" },
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example:
+                          "OTP sent to mobile. Verify to complete signup.",
+                      },
+                    },
+                  },
                 },
               },
             },
             400: {
-              description: "Email already registered",
+              description: "Email or mobile already registered",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -280,6 +223,91 @@ const swaggerOptions = {
             },
             422: {
               description: "Validation errors",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            429: {
+              description: "Cooldown error - OTP already sent",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Please wait 30s before requesting a new OTP",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // ===================== SIGNUP: VERIFY OTP =====================
+      "/auth/signup/verify-otp": {
+        post: {
+          tags: ["Auth"],
+          summary: "Verify OTP for signup and create account",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["mobile", "otp"],
+                  properties: {
+                    mobile: { type: "string", example: "8828382326" },
+                    otp: {
+                      type: "string",
+                      example: "638335",
+                      description: "6-digit OTP sent to mobile",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Signup successful",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/AuthResponse" },
+                },
+              },
+            },
+            400: {
+              description: "Invalid or expired OTP",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            422: {
+              description: "Validation errors",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            409: {
+              description: "Email or mobile already in use",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -297,29 +325,130 @@ const swaggerOptions = {
           },
         },
       },
-      "/auth/login": {
+
+      // ===================== LOGIN: SEND OTP =====================
+      "/auth/login/send-otp": {
         post: {
           tags: ["Auth"],
-          summary: "Login with email and password",
+          summary: "Send OTP to email/mobile for login",
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/LoginRequest" },
+                schema: {
+                  type: "object",
+                  required: ["identifier"],
+                  properties: {
+                    identifier: {
+                      type: "string",
+                      example: "john@example.com",
+                      description: "Email or 10-digit mobile number",
+                    },
+                  },
+                },
               },
             },
           },
           responses: {
             200: {
-              description: "OK",
+              description: "OTP sent successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "OTP sent for login",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            429: {
+              description: "Cooldown error - OTP already sent",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Please wait 30s before requesting a new OTP",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // ===================== LOGIN: VERIFY OTP =====================
+      "/auth/login": {
+        post: {
+          tags: ["Auth"],
+          summary: "Verify OTP for login",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["identifier", "otp"],
+                  properties: {
+                    identifier: {
+                      type: "string",
+                      example: "john@example.com",
+                      description: "Email or 10-digit mobile number",
+                    },
+                    otp: {
+                      type: "string",
+                      example: "638335",
+                      description: "6-digit OTP sent to mobile",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Login successful",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/AuthResponse" },
                 },
               },
             },
-            401: {
-              description: "Invalid credentials",
+            400: {
+              description: "Invalid or expired OTP",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -334,9 +463,34 @@ const swaggerOptions = {
                 },
               },
             },
+            429: {
+              description: "Cooldown error - OTP already sent",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      message: {
+                        type: "string",
+                        example: "Please wait 30s before requesting a new OTP",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Server error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
           },
         },
       },
+
       "/auth/refresh-token": {
         post: {
           tags: ["Auth"],
